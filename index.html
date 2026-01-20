@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindBuddy - Your Mental Health Companion</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💙 MindBuddy</h1>
+            <p>A safe space to talk. Always here. Always listening.</p>
+        </header>
+
+        <div id="chatbox" class="chatbox"></div>
+
+        <div class="input-area">
+            <textarea id="user-input" placeholder="Type how you're feeling..."></textarea>
+            <button id="send-btn">Send</button>
+        </div>
+
+        <footer>
+            <p><em>MindBuddy is not a therapist. For emergencies, call 988 or contact your campus counseling center.</em></p>
+        </footer>
+    </div>
+
+    <script>
+        const chatbox = document.getElementById('chatbox');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        function addMessage(text, sender) {
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('message', sender);
+            msgDiv.textContent = text;
+            chatbox.appendChild(msgDiv);
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            addMessage(message, 'user');
+            userInput.value = '';
+
+            // Show typing indicator
+            const typingDiv = document.createElement('div');
+            typingDiv.classList.add('message', 'bot', 'typing');
+            typingDiv.textContent = '...';
+            chatbox.appendChild(typingDiv);
+            chatbox.scrollTop = chatbox.scrollHeight;
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message: message})
+                });
+
+                const data = await response.json();
+                chatbox.removeChild(typingDiv); // Remove typing indicator
+
+                if (data.bot_response) {
+                    addMessage(data.bot_response, 'bot');
+                }
+            } catch (error) {
+                chatbox.removeChild(typingDiv);
+                addMessage("Sorry, I'm having trouble connecting. Please try again.", 'bot');
+            }
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+       
+        window.onload = () => {
+            addMessage("Hi there!  I'm MindBuddy. How are you feeling today?", 'bot');
+        };
+    </script>
+</body>
+</html>
